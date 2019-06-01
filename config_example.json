@@ -1,0 +1,5 @@
+{
+  "token": "Discord Bot Token",
+  "cmd": "!",
+  "shutdown_message": ":wave:"
+}
