@@ -1,6 +1,8 @@
-#Miror B.ot Readme
+# Miror B.ot Readme
+
 A simple Discord.py-based bot.
-##Requirements
+## Requirements
+
 Python 3.7+
 
 requests
