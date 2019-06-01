@@ -1,5 +1,9 @@
 {
   "token": "Discord Bot Token",
   "cmd": "!",
-  "shutdown_message": ":wave:"
+  "shutdown_message": ":wave:",
+  "forbidden_channels": [1,2,3],
+  "announce": "./announce/",
+  "volume": 0.5,
+  "autorestart": true
 }
