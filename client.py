@@ -121,6 +121,8 @@ class Client(discord.Client):
         # Announce the user's or an arbitrary ID
         if len(words) > 0:
             target = words[0]
+            if "<@!" in target: # Camper has a weird @ID
+                target = target[3:-1]
             if "<@" in target:
                 target = target[2:-1]
             try:
