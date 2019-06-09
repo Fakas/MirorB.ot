@@ -143,7 +143,7 @@ class Client(discord.Client):
         files = [file for file in os.listdir(dir) if os.path.isfile(os.path.join(dir, file))]
         path = None
         for file in files:
-            if id in file:
+            if id + '.' in file:
                 path = os.path.join(dir,file)
                 break
         if path is None:
