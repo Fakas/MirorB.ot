@@ -3,6 +3,8 @@ import json
 import asyncio
 import traceback
 import os
+import socket
+
 
 class Client(discord.Client):
     cfg = {}
@@ -79,7 +81,8 @@ class Client(discord.Client):
         cmds = {"echo":self.echo,
                 "shutdown":self.shutdown,
                 "announce":self.announce_cmd,
-                "stop": self.stop
+                "stop": self.stop,
+                "radio": self.radio
                 }
 
         if word in cmds.keys(): # Do we recognize the command?
@@ -109,6 +112,7 @@ class Client(discord.Client):
             pass
         print("Goodbye!")
 
+
     async def echo(self, message, content, author, words, channel):
         # Delete and repost a message as ourselves
         if not await call(self.delete, message):
@@ -121,6 +125,8 @@ class Client(discord.Client):
         # Announce the user's or an arbitrary ID
         if len(words) > 0:
             target = words[0]
+            if "<@!" in target: # Camper has a weird @ID
+                target = target[3:-1]
             if "<@" in target:
                 target = target[2:-1]
             try:
@@ -143,13 +149,45 @@ class Client(discord.Client):
         files = [file for file in os.listdir(dir) if os.path.isfile(os.path.join(dir, file))]
         path = None
         for file in files:
-            if id in file:
+            if id + '.' in file:
                 path = os.path.join(dir,file)
                 break
         if path is None:
             print("No announce sound for ID {0}".format(id))
         else:
             self.play(path)
+
+    async def radio(self, message, content, author, words, channel, *args):
+        respond = f":musical_note: {self.cfg['radio_url']} :musical_note:"
+        if len(words) == 0:
+            await self.reply(message, respond)
+            return
+        
+        id = str(author.id)
+        target = words[0]
+
+        host = self.cfg["radio_host"]
+        port = self.cfg["radio_port"]
+        prefix = self.cfg["radio_prefix"]
+
+        instructions = {
+            "cmd": "enqueue",
+            "target": target,
+            "user": id
+        }
+
+        instruct = f"{prefix}:{json.dumps(instructions)}".encode("utf-8")
+
+        sock = socket.socket()
+        try:
+            sock.connect((host, port))
+            sock.send(instruct)
+        except Exception:
+            await self.reply(message, "Couldn't connect to the Miror Radio service :/")
+        sock.close()
+
+        await self.reply(message, respond)
+
 
     def play(self, audio):
         if self.vclient is not None:
@@ -198,6 +236,7 @@ class Client(discord.Client):
 def startup():
     # Prepare things before logging in
     global reboot
+
     reboot = False
     autorestart = True
     reboot = False
