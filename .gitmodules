@@ -1,0 +1,4 @@
+[submodule "modules/asslib"]
+	path = modules/asslib
+	url = https://github.com/Fakas/asslib.git
+	branch = master
