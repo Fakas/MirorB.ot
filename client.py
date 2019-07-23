@@ -5,6 +5,7 @@ import traceback
 import os
 import socket
 
+# Main Client Module
 
 class Client(discord.Client):
     cfg = {}
