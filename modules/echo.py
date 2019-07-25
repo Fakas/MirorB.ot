@@ -1,10 +1,21 @@
-from .default import call
+from .asslib.async_util import call
 
 
-async def echo(self, message, content, author, words, channel):
+async def echo(*_args, **kwargs):
+    client = kwargs["client"]
+    message = kwargs["message"]
+    content = kwargs["content"]
     # Delete and repost a message as ourselves
-    if not await call(self.delete, message):
+    if not await call(client.delete, message):
         return
     else:
         content = content[4::].strip()  # Remove "echo" and extraneous whitespace
-        await self.reply(message, content)
+        await client.reply(message, content)
+
+mb_mod = True
+mb_import = False
+mb_actions = {
+    "on_command": {
+        "echo": echo
+    }
+}
