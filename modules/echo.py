@@ -13,7 +13,7 @@ async def echo(*_args, **kwargs):
         await client.reply(message, content)
 
 mb_mod = True
-mb_import = False
+mb_import = True
 mb_actions = {
     "on_command": {
         "echo": echo

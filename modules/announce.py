@@ -2,14 +2,30 @@ import os
 from .asslib import disp
 
 
-async def announce(*_args, **kwargs):
+async def announce(*_args, force_announce=False, **kwargs):
     client = kwargs["client"]
+    if client.vclient is None:
+        return
     if "user_id" in kwargs.keys():
-        # Play a user's announce sound
         user_id = kwargs["user_id"]
+    elif "member" in kwargs.keys():
+        # Play a user's announce sound
+        user_id = kwargs["member"].id
     else:
         # Play our own announce sound
         user_id = client.user.id
+
+    do_announce = False
+    if force_announce:
+        do_announce = True
+    else:
+        for member in client.vclient.channel.members:
+            if member.id == user_id:
+                do_announce = True
+                break
+
+    if not do_announce:
+        return
 
     user_id = str(user_id)
     announce_dir = client.cfg["announce"]
@@ -27,9 +43,13 @@ async def announce(*_args, **kwargs):
         client.play(path)
 
 
-async def announce_cmd(*_args, **kwargs):
+async def announce_self(*args, **kwargs):
+    kwargs.update({"member": kwargs["client"].user})
+    await announce(*args, **kwargs)
+
+
+async def announce_cmd(*args, **kwargs):
     # Announce the user's or an arbitrary ID
-    client = kwargs["client"]
     author = kwargs["author"]
     words = kwargs["words"]
 
@@ -46,7 +66,11 @@ async def announce_cmd(*_args, **kwargs):
             return
     else:
         user_id = author.id
-    await announce(client, user_id=user_id)
+
+    if user_id is not None:
+        kwargs["user_id"] = user_id
+
+    await announce(*args, **kwargs, force_announce=True)
 
 
 mb_mod = True
@@ -57,5 +81,8 @@ mb_actions = {
     },
     "on_voice_join": {
         "announce": announce
+    },
+    "on_voice_join_self": {
+        "announce_self": announce_self
     }
 }

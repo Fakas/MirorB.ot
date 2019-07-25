@@ -53,6 +53,16 @@ class Client(discord.Client):
                     kwargs.update({"client": self})
                     await async_util.call(func, *args, **kwargs)
 
+    async def command_event(self, event, command, *args, **kwargs):
+        for key in self.modules.keys():
+            module = self.modules[key]
+            if event in module.mb_actions.keys():
+                for func_name in module.mb_actions[event]:
+                    if func_name == command:
+                        func = module.mb_actions[event][func_name]
+                        kwargs.update({"client": self})
+                        await async_util.call(func, *args, **kwargs)
+
     # Discord events
 
     async def on_connect(self):
@@ -163,31 +173,55 @@ class Client(discord.Client):
     async def on_member_unban(self, guild, user):
         await self.async_module_event(get_frame_name(), guild=guild, user=user)
 
+    async def on_voice_join(self, member, before, after):
+        await self.async_module_event(get_frame_name(), member=member, before=before, after=after)
+
+    async def on_voice_leave(self, member, before, after):
+        await self.async_module_event(get_frame_name(), member=member, before=before, after=after)
+
+    async def on_voice_join_self(self, channel):
+        await self.async_module_event(get_frame_name(), channel=channel)
+
+    async def on_voice_leave_self(self):
+        await self.async_module_event(get_frame_name())
+
     async def on_voice_state_update(self, member, before, after):
         # When a user changes their voice state
+        v_self = False
         if member.bot:  # TODO
-            # We don't care about bots
-            return
-        channels = member.guild.voice_channels
-        users = []
-        for channel in channels:
-            members = channel.members
-            count = 0
-            if channel.id not in self.cfg["forbidden_channels"]:
-                for user in members:
-                    if not user.bot:
-                        count += 1
-            users.append(count)
-        num = max(users)
-        if num > 0:
-            channel = channels[users.index(num)]
-            join = await self.join_channel(channel)
-            if not join and self.vclient is not None and after.channel == self.vclient.channel and \
-                    after.channel is not None and before.channel != after.channel:
-                pass
+            if member.id != self.user.id:
+                # We don't care about other bots
+                return
+            else:
+                v_self = True
 
-        elif self.vclient is not None:
-            await self.leave_channel()
+        if after.channel is not None and after.channel != before.channel:
+            await self.on_voice_join(member, before, after)
+        elif after.channel is None and before.channel is not None:
+            await self.on_voice_leave(member, before, after)
+
+        # TODO on_voice_join/leave, on_voice_join/leave_self, for announce...
+        if not v_self:
+            channels = member.guild.voice_channels
+            users = []
+            for channel in channels:
+                members = channel.members
+                count = 0
+                if channel.id not in self.cfg["forbidden_channels"]:
+                    for user in members:
+                        if not user.bot:
+                            count += 1
+                users.append(count)
+            num = max(users)
+            if num > 0:
+                channel = channels[users.index(num)]
+                join = await self.join_channel(channel)
+                if not join and self.vclient is not None and after.channel == self.vclient.channel and \
+                        after.channel is not None and before.channel != after.channel:
+                    pass
+
+            elif self.vclient is not None:
+                await self.leave_channel()
 
     def run(self, token=None):
         if token is None:
@@ -246,19 +280,19 @@ class Client(discord.Client):
         if self.vclient is not None and channel != self.vclient.channel:
             await self.vclient.move_to(channel)
         elif self.vclient is None:
-            try:
-                self.vclient = await channel.connect()
-            except discord.errors.ClientException:
-                self.vclient.move_to(channel)
+            self.vclient = await channel.connect()
         else:
             return False
 
+        await self.on_voice_join_self(channel)
         return True
 
     async def leave_channel(self):
         # Leave the current voice channel if we're in one
         await self.vclient.disconnect()
         self.vclient = None
+
+        await self.on_voice_leave_self()
 
     async def cmd(self, message):
         # Handle messages from commands
@@ -269,8 +303,8 @@ class Client(discord.Client):
 
         channel = message.channel
         try:
-            await self.async_module_event("on_command", message=message, content=content, author=author,
-                                          words=words, channel=channel)
+            await self.command_event("on_command", word, message=message, content=content, author=author,
+                                     words=words, channel=channel)
             # await call(func, message, content, author, words, channel)  # Invoke command
         except SystemExit as err:
             raise SystemExit(err.code)
