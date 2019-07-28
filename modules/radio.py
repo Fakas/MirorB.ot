@@ -1,5 +1,7 @@
 import json
 import socket
+from .asslib import disp
+import traceback
 
 
 async def radio(*_args, **kwargs):
@@ -29,12 +31,15 @@ async def radio(*_args, **kwargs):
     instruct = f"{prefix}:{json.dumps(instructions)}".encode("utf-8")
 
     sock = socket.socket()
+    # noinspection PyBroadException
     try:
         sock.connect((host, port))
         sock.send(instruct)
-    except Exception as e:
+    except Exception:
         await client.reply(message, "Couldn't connect to the Miror Radio service :/")
-        raise e from None
+        disp(message)
+        traceback.print_exc()
+        return
     sock.close()
 
     await client.reply(message, respond)

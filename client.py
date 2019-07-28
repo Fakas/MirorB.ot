@@ -6,9 +6,8 @@ from modules.asslib import disp, async_util, get_frame_name
 
 import modules as mb_modules
 
+
 # Main Client Module
-
-
 class Client(discord.Client):
     cfg = {}
     vclient = None
@@ -81,9 +80,19 @@ class Client(discord.Client):
     async def on_resumed(self):
         await self.async_module_event(get_frame_name())
 
-    async def on_error(self, *args, **kwargs):
-        await super(Client, self).on_error(*args, **kwargs)
-        await self.async_module_event(get_frame_name(), *args, **kwargs)
+    # noinspection PyBroadException
+    async def on_error(self, event, *args, **kwargs):
+        try:
+            await super(Client, self).on_error(event, *args, **kwargs)
+        except Exception:
+            disp("Default error handling failed! Traceback:")
+            traceback.print_exc()
+        # noinspection PyBroadException
+        try:
+            await self.async_module_event(get_frame_name(), *args, **kwargs)
+        except Exception:
+            disp("Encountered an error in an on_error function! Traceback:")
+            traceback.print_exc()
 
     async def on_socket_raw_receive(self, msg):
         await self.async_module_event(get_frame_name(), msg=msg)
@@ -188,7 +197,7 @@ class Client(discord.Client):
     async def on_voice_state_update(self, member, before, after):
         # When a user changes their voice state
         v_self = False
-        if member.bot:  # TODO
+        if member.bot:  # TODO Should we have separate events for bots?
             if member.id != self.user.id:
                 # We don't care about other bots
                 return
@@ -200,7 +209,6 @@ class Client(discord.Client):
         elif after.channel is None and before.channel is not None:
             await self.on_voice_leave(member, before, after)
 
-        # TODO on_voice_join/leave, on_voice_join/leave_self, for announce...
         if not v_self:
             channels = member.guild.voice_channels
             users = []
