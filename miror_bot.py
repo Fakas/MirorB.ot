@@ -1,22 +1,32 @@
 import discord
-import json
 import traceback
 from inspect import ismodule
-from modules.asslib import disp, async_util, get_frame_name
+from modules.asslib import disp, async_util, get_function_name
+from modules.miror_module import is_module, verify_module, get_config
+import asyncio
 
 import modules as mb_modules
 
 
 # Main Client Module
 class Client(discord.Client):
-    cfg = {}
+    cfg = None
     vclient = None
     modules = {}
+    event_loop = None
 
-    def __init__(self, jcfg):
+    mb_default_config = {
+        "token": "<Your Discord Token Here>",
+        "cmd": "!",
+        "shutdown_message": ":wave:",
+        "forbidden_channels": [],
+        "audio_volume": 0.5
+    }
+
+    def __init__(self):
         # Call parent __init__ before we continue
         super(Client, self).__init__()
-        self.cfg = jcfg
+        self.cfg = get_config(self)
 
         self.load_modules()
         self.init_modules()
@@ -25,11 +35,13 @@ class Client(discord.Client):
         everything = mb_modules.__dict__
         for key in everything.keys():
             if key[0] != '_' and ismodule(everything[key]):
-                module = everything[key]
-                grab = (hasattr(module, "mb_mod") and hasattr(module, "mb_import")) and (
-                            module.mb_mod and module.mb_import)
-                if grab:
-                    self.modules.update({key: module})
+                mb_module = everything[key]
+                if hasattr(mb_module, "mb_mods"):
+                    for Mod in mb_module.mb_mods:
+                        if is_module(Mod) and verify_module(Mod):
+                            mod = Mod()
+                            disp(f"Loading module \"{mod.mb_name}\"...")
+                            self.modules.update({key: mod})
 
     def init_modules(self):
         self.general_module_event("init", client=self)
@@ -65,20 +77,22 @@ class Client(discord.Client):
     # Discord events
 
     async def on_connect(self):
-        await self.async_module_event(get_frame_name())
+        await self.async_module_event(get_function_name())
 
     async def on_disconnect(self):
-        await self.async_module_event(get_frame_name())
+        await self.async_module_event(get_function_name())
 
     async def on_ready(self):
         # When logged in
         report = f"Logged in as {self.user.name}! ({self.user.id})"
         disp(report)
 
-        await self.async_module_event(get_frame_name())
+        self.event_loop = asyncio.get_event_loop()
+
+        await self.async_module_event(get_function_name())
 
     async def on_resumed(self):
-        await self.async_module_event(get_frame_name())
+        await self.async_module_event(get_function_name())
 
     # noinspection PyBroadException
     async def on_error(self, event, *args, **kwargs):
@@ -89,110 +103,110 @@ class Client(discord.Client):
             traceback.print_exc()
         # noinspection PyBroadException
         try:
-            await self.async_module_event(get_frame_name(), *args, **kwargs)
+            await self.async_module_event(get_function_name(), *args, **kwargs)
         except Exception:
             disp("Encountered an error in an on_error function! Traceback:")
             traceback.print_exc()
 
     async def on_socket_raw_receive(self, msg):
-        await self.async_module_event(get_frame_name(), msg=msg)
+        await self.async_module_event(get_function_name(), msg=msg)
 
     async def on_socket_raw_send(self, payload):
-        await self.async_module_event(get_frame_name(), payload=payload)
+        await self.async_module_event(get_function_name(), payload=payload)
 
     async def on_typing(self, channel, user, when):
-        await self.async_module_event(get_frame_name(), channel=channel, user=user, when=when)
+        await self.async_module_event(get_function_name(), channel=channel, user=user, when=when)
 
     async def on_message(self, message):
         # Handle message input
-        await self.async_module_event(get_frame_name(), message=message)
+        await self.async_module_event(get_function_name(), message=message)
 
-        if message.content[0] == self.cfg["cmd"]:
+        if len(message.content) > 0 and message.content[0] == self.cfg["cmd"]:
             await self.cmd(message)
 
     async def on_message_delete(self, message):
-        await self.async_module_event(get_frame_name(), message=message)
+        await self.async_module_event(get_function_name(), message=message)
 
     async def on_bulk_message_delete(self, messages):
-        await self.async_module_event(get_frame_name(), messages=messages)
+        await self.async_module_event(get_function_name(), messages=messages)
 
     async def on_message_edit(self, before, after):
-        await self.async_module_event(get_frame_name(), before=before, after=after)
+        await self.async_module_event(get_function_name(), before=before, after=after)
 
     async def on_reaction_add(self, reaction, user):
-        await self.async_module_event(get_frame_name(), reaction=reaction, user=user)
+        await self.async_module_event(get_function_name(), reaction=reaction, user=user)
 
     async def on_reaction_remove(self, reaction, user):
-        await self.async_module_event(get_frame_name(), reaction=reaction, user=user)
+        await self.async_module_event(get_function_name(), reaction=reaction, user=user)
 
     async def on_reaction_clear(self, message, reactions):
-        await self.async_module_event(get_frame_name(), message=message, reactions=reactions)
+        await self.async_module_event(get_function_name(), message=message, reactions=reactions)
 
     async def on_guild_channel_delete(self, channel):
-        await self.async_module_event(get_frame_name(), channel=channel)
+        await self.async_module_event(get_function_name(), channel=channel)
 
     async def on_guild_channel_create(self, channel):
-        await self.async_module_event(get_frame_name(), channel=channel)
+        await self.async_module_event(get_function_name(), channel=channel)
 
     async def on_guild_channel_update(self, before, after):
-        await self.async_module_event(get_frame_name(), before=before, after=after)
+        await self.async_module_event(get_function_name(), before=before, after=after)
 
-    async def on_guild_channel_pins_update(self, before, after):
-        await self.async_module_event(get_frame_name(), before=before, after=after)
+    async def on_guild_channel_pins_update(self, channel, last_pin):
+        await self.async_module_event(get_function_name(), channel=channel, last_pin=last_pin)
 
     async def on_guild_integrations_update(self, guild):
-        await self.async_module_event(get_frame_name(), guild=guild)
+        await self.async_module_event(get_function_name(), guild=guild)
 
     async def on_webhooks_update(self, channel):
-        await self.async_module_event(get_frame_name(), channel=channel)
+        await self.async_module_event(get_function_name(), channel=channel)
 
     async def on_member_join(self, member):
-        await self.async_module_event(get_frame_name(), member=member)
+        await self.async_module_event(get_function_name(), member=member)
 
     async def on_member_remove(self, member):
-        await self.async_module_event(get_frame_name(), member=member)
+        await self.async_module_event(get_function_name(), member=member)
 
     async def on_member_update(self, before, after):
-        await self.async_module_event(get_frame_name(), before=before, after=after)
+        await self.async_module_event(get_function_name(), before=before, after=after)
 
     async def on_user_update(self, before, after):
-        await self.async_module_event(get_frame_name(), before=before, after=after)
+        await self.async_module_event(get_function_name(), before=before, after=after)
 
     async def on_guild_join(self, guild):
-        await self.async_module_event(get_frame_name(), guild=guild)
+        await self.async_module_event(get_function_name(), guild=guild)
 
     async def on_guild_remove(self, guild):
-        await self.async_module_event(get_frame_name(), guild=guild)
+        await self.async_module_event(get_function_name(), guild=guild)
 
     async def on_guild_update(self, before, after):
-        await self.async_module_event(get_frame_name(), before=before, after=after)
+        await self.async_module_event(get_function_name(), before=before, after=after)
 
     async def on_guild_emojis_update(self, guild, before, after):
-        await self.async_module_event(get_frame_name(), guild=guild, before=before, after=after)
+        await self.async_module_event(get_function_name(), guild=guild, before=before, after=after)
 
     async def on_guild_available(self, guild):
-        await self.async_module_event(get_frame_name(), guild=guild)
+        await self.async_module_event(get_function_name(), guild=guild)
 
     async def on_guild_unavailable(self, guild):
-        await self.async_module_event(get_frame_name(), guild=guild)
+        await self.async_module_event(get_function_name(), guild=guild)
 
     async def on_member_ban(self, guild, user):
-        await self.async_module_event(get_frame_name(), guild=guild, user=user)
+        await self.async_module_event(get_function_name(), guild=guild, user=user)
 
     async def on_member_unban(self, guild, user):
-        await self.async_module_event(get_frame_name(), guild=guild, user=user)
+        await self.async_module_event(get_function_name(), guild=guild, user=user)
 
     async def on_voice_join(self, member, before, after):
-        await self.async_module_event(get_frame_name(), member=member, before=before, after=after)
+        await self.async_module_event(get_function_name(), member=member, before=before, after=after)
 
     async def on_voice_leave(self, member, before, after):
-        await self.async_module_event(get_frame_name(), member=member, before=before, after=after)
+        await self.async_module_event(get_function_name(), member=member, before=before, after=after)
 
     async def on_voice_join_self(self, channel):
-        await self.async_module_event(get_frame_name(), channel=channel)
+        await self.async_module_event(get_function_name(), channel=channel)
 
     async def on_voice_leave_self(self):
-        await self.async_module_event(get_frame_name())
+        await self.async_module_event(get_function_name())
 
     async def on_voice_state_update(self, member, before, after):
         # When a user changes their voice state
@@ -234,6 +248,8 @@ class Client(discord.Client):
     def run(self, token=None):
         if token is None:
             token = self.cfg["token"]
+        if token == "<Your Discord Token Here>":
+            raise ValueError("You must set a token for the bot to use!")
         return super(Client, self).run(token)
 
     async def shutdown(self, message, *_args):
@@ -249,7 +265,7 @@ class Client(discord.Client):
             self.stop()
             if type(audio) is str:
                 audio = discord.FFmpegPCMAudio(audio)
-            audio = discord.PCMVolumeTransformer(audio, volume=self.cfg["volume"])
+            audio = discord.PCMVolumeTransformer(audio, volume=self.cfg["audio_volume"])
 
             if self.vclient.is_playing() or self.vclient.is_paused():  # We check twice to avoid some race conditions
                 self.vclient.stop()
@@ -281,7 +297,7 @@ class Client(discord.Client):
     @staticmethod
     async def reply(message, text):
         # Reply to a message in the same channel
-        await message.channel.send(text)
+        return await message.channel.send(text)
 
     async def join_channel(self, channel):
         # Join a voice channel if we're not already in it
@@ -328,14 +344,10 @@ class Client(discord.Client):
 
 def startup():
     # Prepare things before logging in
-
-    with open("./config.json", 'r') as fp:
-        jcfg = json.load(fp)
-        fp.close()
-
     discord.opus.load_opus("libopus.so.0")
-    client = Client(jcfg)
+    client = Client()
 
+    # Launch the client
     client.run()
 
 
