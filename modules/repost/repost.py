@@ -37,11 +37,14 @@ class Repost(MirorModule):
         msg = kwargs["message"]
         client = kwargs["client"]
         content = msg.content
+        temp_cache = []
+        replied = False
         for host in self.cfg["hosts"]:
             if host in content:
-                words = content.split(' ')
+                words = content.replace("\n", ' ').split(' ')
                 for word in words:
-                    if host in word and word not in self.cache["whitelist"]:
+                    if host in word and word not in self.cache["whitelist"] and word not in temp_cache:
+                        temp_cache.append(word)
                         if word in self.cache["posts"]:
                             stats = self.get_stats()
                             user_id = str(msg.author.id)
@@ -49,8 +52,10 @@ class Repost(MirorModule):
                                 stats.update({user_id: 0})
                             stats[user_id] += 1
                             self.update_stats(stats)
-                            reply = random.choice(self.cfg["responses"])
-                            await client.reply(msg, reply)
+                            if not replied:
+                                replied = True
+                                reply = random.choice(self.cfg["responses"])
+                                await client.reply(msg, reply)
                         else:
                             self.cache["posts"].append(word)
                             self.update_cache()
