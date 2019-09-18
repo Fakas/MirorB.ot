@@ -28,4 +28,5 @@ class Echo(MirorModule):
             return
         else:
             content = content[4::].strip()  # Remove "echo" and extraneous whitespace
-            await client.reply(message, content)
+            if content:
+                await client.reply(message, content)
