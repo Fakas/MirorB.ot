@@ -10,7 +10,8 @@ async def echo(*_args, **kwargs):
         return
     else:
         content = content[4::].strip()  # Remove "echo" and extraneous whitespace
-        await client.reply(message, content)
+        if content:
+            await client.reply(message, content)
 
 mb_mod = True
 mb_import = True
