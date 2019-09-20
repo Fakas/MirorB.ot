@@ -23,7 +23,8 @@ class Client(discord.Client):
         "cmd": "!",
         "shutdown_message": ":wave:",
         "forbidden_channels": [],
-        "audio_volume": 0.5
+        "audio_volume": 0.5,
+        "tick_wait": 60
     }
 
     def __init__(self):
@@ -96,6 +97,7 @@ class Client(discord.Client):
         self.event_loop = asyncio.get_event_loop()
 
         await self.async_module_event(get_function_name())
+        await self.tick()
 
     async def on_resumed(self):
         await self.async_module_event(get_function_name())
@@ -347,6 +349,12 @@ class Client(discord.Client):
                 raise ee from None
             disp(f"Unexpected error in cmd \"{word}\": ")
             raise e from None
+
+    async def tick(self):
+        wait = self.cfg["tick_wait"]
+        while True:
+            await self.async_module_event(get_function_name())
+            await asyncio.sleep(wait)
 
 
 def startup():

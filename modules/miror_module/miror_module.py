@@ -129,6 +129,9 @@ class MirorModule(object):
         },
         "init": {  # When client initialisation happens
 
+        },
+        "tick": {  # Every X seconds
+
         }
     }
 
