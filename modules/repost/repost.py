@@ -1,3 +1,5 @@
+"""Repost-tracking Miror B.ot Module"""
+
 from modules.miror_module import MirorModule
 from modules.asslib import frame_util
 from os import path
@@ -6,6 +8,7 @@ import json
 
 
 class Repost(MirorModule):
+    """Repost-tracking Miror B.ot Module"""
     mb_mod = True
     mb_import = True
     mb_name = "Repost"
@@ -33,6 +36,25 @@ class Repost(MirorModule):
             }
         }
 
+    async def process_word(self, client, msg, host, word, temp_cache, replied):
+        if host in word and word not in self.cache["whitelist"] and word not in temp_cache:
+            temp_cache.append(word)
+            if word in self.cache["posts"]:
+                stats = self.get_stats()
+                user_id = str(msg.author.id)
+                if user_id not in stats.keys():
+                    stats.update({user_id: 0})
+                stats[user_id] += 1
+                self.update_stats(stats)
+                if not replied:
+                    replied = True
+                    reply = random.choice(self.cfg["responses"])
+                    await client.reply(msg, reply)
+            else:
+                self.cache["posts"].append(word)
+                self.update_cache()
+        return replied
+
     async def check_post(self, *_args, **kwargs):
         msg = kwargs["message"]
         client = kwargs["client"]
@@ -43,22 +65,7 @@ class Repost(MirorModule):
             if host in content:
                 words = content.replace("\n", ' ').split(' ')
                 for word in words:
-                    if host in word and word not in self.cache["whitelist"] and word not in temp_cache:
-                        temp_cache.append(word)
-                        if word in self.cache["posts"]:
-                            stats = self.get_stats()
-                            user_id = str(msg.author.id)
-                            if user_id not in stats.keys():
-                                stats.update({user_id: 0})
-                            stats[user_id] += 1
-                            self.update_stats(stats)
-                            if not replied:
-                                replied = True
-                                reply = random.choice(self.cfg["responses"])
-                                await client.reply(msg, reply)
-                        else:
-                            self.cache["posts"].append(word)
-                            self.update_cache()
+                    replied = await self.process_word(client, msg, host, word, temp_cache, replied)
 
     def read_cache(self):
         with open(self.cache_path, 'r') as cache_file:

@@ -1,8 +1,10 @@
+"""Echo Miror B.ot Module"""
 from modules.asslib.async_util import call
 from modules.miror_module import MirorModule
 
 
 class Echo(MirorModule):
+    """Echo Miror B.ot Module"""
     mb_mod = True
     mb_import = True
     mb_name = "Echo"
@@ -23,7 +25,7 @@ class Echo(MirorModule):
         client = kwargs["client"]
         message = kwargs["message"]
         content = kwargs["content"]
-        # Delete and repost a message as ourselves
+        # Delete and re-post a message as ourselves
         if not await call(client.delete, message):
             return
         else:

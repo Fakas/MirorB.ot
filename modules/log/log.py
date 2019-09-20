@@ -1,8 +1,10 @@
+"""Logging Miror B.ot Module"""
 from modules.asslib import disp
 from modules.miror_module import MirorModule
 
 
 class Log(MirorModule):
+    """Logging Miror B.ot Module"""
     mb_mod = True  # Is this a module designed for use with Miror B.ot?
     mb_import = True  # Should this module and its actions be automatically loaded by Miror B.ot?
     mb_name = "Logging"

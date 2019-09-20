@@ -1,3 +1,5 @@
+"""Miror Radio Controller Miror B.ot Module"""
+
 import json
 import aio_pika
 import uuid
@@ -6,6 +8,7 @@ from modules.miror_module import MirorModule
 
 
 class RadioController(MirorModule):
+    """Miror Radio Controller Miror B.ot Module"""
     mb_mod = True
     mb_import = True
     mb_name = "Miror Radio Client"

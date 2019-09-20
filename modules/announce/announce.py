@@ -1,9 +1,12 @@
+"""Announce sounds module."""
+
 import os
 from modules.asslib import disp
 from modules.miror_module import MirorModule
 
 
 class Announce(MirorModule):
+    """Announce sounds Miror B.ot module"""
     mb_mod = True
     mb_import = True
     mb_name = "Announce"
@@ -22,9 +25,22 @@ class Announce(MirorModule):
         self.get_config()
 
     @staticmethod
-    async def announce(*_args, force_announce=False, **kwargs):
+    def should_announce(client, user_id, force_announce=False):
+        do_announce = False
+        if client.voice_client is None:
+            return False
+        if force_announce:
+            do_announce = True
+        else:
+            for member in client.voice_client.channel.members:
+                if member.id == user_id:
+                    do_announce = True
+                    break
+        return do_announce
+
+    async def announce(self, *_args, force_announce=False, **kwargs):
         client = kwargs["client"]
-        if client.vclient is None:
+        if client.voice_client is None:
             return
         if "user_id" in kwargs.keys():
             user_id = kwargs["user_id"]
@@ -35,16 +51,7 @@ class Announce(MirorModule):
             # Play our own announce sound
             user_id = client.user.id
 
-        do_announce = False
-        if force_announce:
-            do_announce = True
-        else:
-            for member in client.vclient.channel.members:
-                if member.id == user_id:
-                    do_announce = True
-                    break
-
-        if not do_announce:
+        if not self.should_announce(client, user_id, force_announce=force_announce):
             return
 
         user_id = str(user_id)
@@ -57,7 +64,7 @@ class Announce(MirorModule):
                 path = os.path.join(announce_dir, file)
                 break
         if path is None:
-            # TODO Add default announce sound functionality
+            # TODO Add default announce sound functionality (Fakas)
             disp(f"No announce sound for ID {user_id}")
         else:
             client.play(path)

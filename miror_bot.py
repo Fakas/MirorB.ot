@@ -1,3 +1,5 @@
+"""Main Miror B.ot Python module."""
+
 import discord
 import traceback
 from inspect import ismodule
@@ -10,8 +12,9 @@ import modules as mb_modules
 
 # Main Client Module
 class Client(discord.Client):
+    """Main Miror B.ot Discord client class."""
     cfg = None
-    vclient = None
+    voice_client = None
     modules = {}
     event_loop = None
 
@@ -20,7 +23,8 @@ class Client(discord.Client):
         "cmd": "!",
         "shutdown_message": ":wave:",
         "forbidden_channels": [],
-        "audio_volume": 0.5
+        "audio_volume": 0.5,
+        "tick_wait": 60
     }
 
     def __init__(self):
@@ -31,17 +35,20 @@ class Client(discord.Client):
         self.load_modules()
         self.init_modules()
 
+    def load_module(self, mod, key):
+        if is_module(mod) and verify_module(mod):
+            mod = mod()
+            disp(f"Loading module \"{mod.mb_name}\"...")
+            self.modules.update({key: mod})
+
     def load_modules(self):
         everything = mb_modules.__dict__
         for key in everything.keys():
             if key[0] != '_' and ismodule(everything[key]):
                 mb_module = everything[key]
                 if hasattr(mb_module, "mb_mods"):
-                    for Mod in mb_module.mb_mods:
-                        if is_module(Mod) and verify_module(Mod):
-                            mod = Mod()
-                            disp(f"Loading module \"{mod.mb_name}\"...")
-                            self.modules.update({key: mod})
+                    for mod in mb_module.mb_mods:
+                        self.load_module(mod, key)
 
     def init_modules(self):
         self.general_module_event("init", client=self)
@@ -90,6 +97,7 @@ class Client(discord.Client):
         self.event_loop = asyncio.get_event_loop()
 
         await self.async_module_event(get_function_name())
+        await self.tick()
 
     async def on_resumed(self):
         await self.async_module_event(get_function_name())
@@ -208,15 +216,26 @@ class Client(discord.Client):
     async def on_voice_leave_self(self):
         await self.async_module_event(get_function_name())
 
+    def count_channel_members(self, channels):
+        users = []
+        for channel in channels:
+            members = channel.members
+            count = 0
+            if channel.id not in self.cfg["forbidden_channels"]:
+                for user in members:
+                    if not user.bot:
+                        count += 1
+            users.append(count)
+        return users
+
     async def on_voice_state_update(self, member, before, after):
         # When a user changes their voice state
         v_self = False
-        if member.bot:  # TODO Should we have separate events for bots?
-            if member.id != self.user.id:
-                # We don't care about other bots
-                return
-            else:
-                v_self = True
+        if member.bot and member.id != self.user.id:  # TODO Should we have separate events for bots? (Fakas)
+            # We don't care about other bots
+            return
+        elif member.bot:
+            v_self = True
 
         if after.channel is not None and after.channel != before.channel:
             await self.on_voice_join(member, before, after)
@@ -225,24 +244,13 @@ class Client(discord.Client):
 
         if not v_self:
             channels = member.guild.voice_channels
-            users = []
-            for channel in channels:
-                members = channel.members
-                count = 0
-                if channel.id not in self.cfg["forbidden_channels"]:
-                    for user in members:
-                        if not user.bot:
-                            count += 1
-                users.append(count)
+            users = self.count_channel_members(channels)
             num = max(users)
             if num > 0:
                 channel = channels[users.index(num)]
-                join = await self.join_channel(channel)
-                if not join and self.vclient is not None and after.channel == self.vclient.channel and \
-                        after.channel is not None and before.channel != after.channel:
-                    pass
+                await self.join_channel(channel)
 
-            elif self.vclient is not None:
+            elif self.voice_client is not None:
                 await self.leave_channel()
 
     def run(self, token=None):
@@ -261,21 +269,22 @@ class Client(discord.Client):
         disp("Goodbye!")
 
     def play(self, audio):
-        if self.vclient is not None:
+        if self.voice_client is not None:
             self.stop()
             if type(audio) is str:
                 audio = discord.FFmpegPCMAudio(audio)
             audio = discord.PCMVolumeTransformer(audio, volume=self.cfg["audio_volume"])
 
-            if self.vclient.is_playing() or self.vclient.is_paused():  # We check twice to avoid some race conditions
-                self.vclient.stop()
-            self.vclient.play(audio)
+            if self.voice_client.is_playing() or self.voice_client.is_paused():
+                # We check twice to avoid some race conditions
+                self.voice_client.stop()
+            self.voice_client.play(audio)
         else:
             disp("Tried to play audio but was not connected to a voice channel!")
 
     def stop(self):
-        if self.vclient is not None:
-            self.vclient.stop()
+        if self.voice_client is not None:
+            self.voice_client.stop()
 
     async def delete(self, obj):
         # Delete something (probably a Discord object)
@@ -301,10 +310,10 @@ class Client(discord.Client):
 
     async def join_channel(self, channel):
         # Join a voice channel if we're not already in it
-        if self.vclient is not None and channel != self.vclient.channel:
-            await self.vclient.move_to(channel)
-        elif self.vclient is None:
-            self.vclient = await channel.connect()
+        if self.voice_client is not None and channel != self.voice_client.channel:
+            await self.voice_client.move_to(channel)
+        elif self.voice_client is None:
+            self.voice_client = await channel.connect()
         else:
             return False
 
@@ -313,8 +322,8 @@ class Client(discord.Client):
 
     async def leave_channel(self):
         # Leave the current voice channel if we're in one
-        await self.vclient.disconnect()
-        self.vclient = None
+        await self.voice_client.disconnect()
+        self.voice_client = None
 
         await self.on_voice_leave_self()
 
@@ -341,8 +350,18 @@ class Client(discord.Client):
             disp(f"Unexpected error in cmd \"{word}\": ")
             raise e from None
 
+    async def tick(self):
+        wait = self.cfg["tick_wait"]
+        while True:
+            await self.async_module_event(get_function_name())
+            await asyncio.sleep(wait)
+
 
 def startup():
+    """
+    Default initialisation function.
+    :return:
+    """
     # Prepare things before logging in
     discord.opus.load_opus("libopus.so.0")
     client = Client()
