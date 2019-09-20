@@ -1,7 +1,9 @@
+"""Help Miror B.ot Module"""
 from modules.miror_module import MirorModule
 
 
 class Help(MirorModule):
+    """Help Miror B.ot Module"""
     mb_mod = True
     mb_import = True
     mb_name = "Help"

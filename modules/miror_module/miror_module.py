@@ -1,9 +1,11 @@
+"""Common Miror B.ot Module"""
 import json
 from os import path, getcwd, makedirs
 from modules.asslib import frame_util, disp
 
 
-class MirorModule:
+class MirorModule(object):
+    """Common Miror B.ot Module"""
     mb_mod = False  # Is this a module designed for use with Miror B.ot?
     mb_import = False  # Should this module and its actions be automatically loaded by Miror B.ot?
     mb_name = "__DefaultName__"
@@ -138,6 +140,11 @@ class MirorModule:
 
 
 def get_config(target):
+    """
+    Get a config file for a given module.
+    :param target: Target module
+    :return: Config dict
+    """
     if target is str:
         name = target
     else:
@@ -163,10 +170,20 @@ def get_config(target):
 
 
 def is_module(obj):
+    """
+    Determine whether or not an object is a Miror B.ot Module
+    :param obj: Object to test
+    :return: True or False
+    """
     return issubclass(obj, MirorModule)
 
 
 def verify_module(mod):
+    """
+    Raise an exception if a given Miror B.ot Module does not meet basic requirements for auto-import
+    :param mod: Miror B.ot Module
+    :return: True if passes all checks, False if not designed for auto-import
+    """
     if mod.mb_mod is False:
         return False
     if mod.mb_import is False:
@@ -177,8 +194,10 @@ def verify_module(mod):
 
 
 class MirorBotException(Exception):
+    """Miror B.ot Exception class"""
     pass
 
 
 class NoNameException(MirorBotException):
+    """Missing name Exception class"""
     pass
