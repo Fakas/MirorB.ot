@@ -1,2 +1,2 @@
-from .help import Help as _Echo
-mb_mods = (_Echo,)
+from .help import Help as _Help
+mb_mods = (_Help,)
