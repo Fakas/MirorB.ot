@@ -4,7 +4,7 @@ import discord
 import traceback
 from inspect import ismodule
 from modules.asslib import disp, async_util, get_function_name
-from modules.miror_module import is_module, verify_module, get_config
+from modules.miror_module import is_module, verify_module, get_config, set_config
 import asyncio
 
 import modules as mb_modules
@@ -256,8 +256,9 @@ class Client(discord.Client):
     def run(self, token=None):
         if token is None:
             token = self.cfg["token"]
-        if token == "<Your Discord Token Here>":
-            raise ValueError("You must set a token for the bot to use!")
+        while token is None or type(token) is not str or token == "<Your Discord Token Here>" or token.strip() == "":
+            self.set_token()
+            token = self.cfg["token"]
         return super(Client, self).run(token)
 
     async def shutdown(self, message, *_args):
@@ -267,6 +268,10 @@ class Client(discord.Client):
         disp("Logging out from Discord...")
         await self.logout()
         disp("Goodbye!")
+
+    def set_token(self):
+        self.cfg["token"] = input("Enter Discord Bot Token: ")
+        set_config(self, self.cfg)
 
     def play(self, audio):
         if self.voice_client is not None:
