@@ -177,7 +177,7 @@ def get_name(target):
     Get a safe module name
     :param target: Target Miror B.ot module
     """
-    if target is str:
+    if type(target) is str:
         return target
     else:
         file_path = frame_util.get_class_file(target)
