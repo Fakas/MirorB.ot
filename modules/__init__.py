@@ -1,8 +1,14 @@
+"""
+Automatically load installed Miror B.ot modules
+"""
 import os as _os
 
 
 # Awkward as fuck
 def __load_modules__():
+    """
+    Automatically load installed Miror B.ot modules
+    """
     pkg_path = _os.path.realpath(__file__)
     pkg_path = _os.path.dirname(pkg_path)
 

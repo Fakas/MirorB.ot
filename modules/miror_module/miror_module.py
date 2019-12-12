@@ -148,28 +148,64 @@ def get_config(target):
     :param target: Target module
     :return: Config dict
     """
-    if target is str:
-        name = target
+    name = get_name(target)
+    config_path = get_config_path(name)
+    if not path.exists(config_path):
+        disp(f"Generating config file for module \"{name}\"...")
+        set_config(name, target.mb_default_config)
+
+    config_file = open(config_path, 'r')
+    config = json.load(config_file)
+    config_file.close()
+    return config
+
+
+def set_config(target, config):
+    """
+    Dump config dict to JSON config file
+    :param target: Target module
+    :param config: config dict
+    """
+    name = get_name(target)
+    config_path = get_config_path(name)
+    with open(config_path, "w") as config_file:
+        json.dump(config, config_file, indent=4)
+
+
+def get_name(target):
+    """
+    Get a safe module name
+    :param target: Target Miror B.ot module
+    """
+    if type(target) is str:
+        return target
     else:
         file_path = frame_util.get_class_file(target)
         name = path.split(file_path)
         name = path.splitext(name[1])
         name = name[0]
+    return name
+
+
+def get_config_path(name):
+    """
+    Get path to Miror B.ot config file
+    :param name: Name of config file, without file extension
+    :return: Absolute path to file
+    """
+    return path.join(make_config_dir(), f"{name}.json")
+
+
+def make_config_dir():
+    """
+    Create a configuration directory if it doesn't exist
+    :return: Absolute path to configuration directory
+    """
     config_dir = path.join(getcwd(), "config")
     if not path.exists(config_dir):
         disp("No config directory exists, it will be created!")
         makedirs(config_dir)
-    config_path = path.join(config_dir, f"{name}.json")
-    if not path.exists(config_path):
-        disp(f"Generating config file for module \"{name}\"...")
-        config_file = open(config_path, 'w')
-        json.dump(target.mb_default_config, config_file, indent=4)
-        config_file.close()
-    config_file = open(config_path, 'r')
-    config = json.load(config_file)
-    config_file.close()
-
-    return config
+    return config_dir
 
 
 def is_module(obj):

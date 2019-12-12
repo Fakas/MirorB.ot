@@ -4,7 +4,8 @@ import discord
 import traceback
 from inspect import ismodule
 from modules.asslib import disp, async_util, get_function_name
-from modules.miror_module import is_module, verify_module, get_config
+from modules.miror_module import is_module, verify_module, get_config, set_config
+from sys import argv
 import asyncio
 
 import modules as mb_modules
@@ -256,8 +257,11 @@ class Client(discord.Client):
     def run(self, token=None):
         if token is None:
             token = self.cfg["token"]
-        if token == "<Your Discord Token Here>":
-            raise ValueError("You must set a token for the bot to use!")
+        else:
+            self.set_token(token)
+        while token is None or type(token) is not str or token == "<Your Discord Token Here>" or token.strip() == "":
+            self.set_token()
+            token = self.cfg["token"]
         return super(Client, self).run(token)
 
     async def shutdown(self, message, *_args):
@@ -267,6 +271,10 @@ class Client(discord.Client):
         disp("Logging out from Discord...")
         await self.logout()
         disp("Goodbye!")
+
+    def set_token(self, token: str = None):
+        self.cfg["token"] = input("Enter Discord Bot Token: ") if token is None else token
+        set_config(self, self.cfg)
 
     def play(self, audio):
         if self.voice_client is not None:
@@ -357,7 +365,7 @@ class Client(discord.Client):
             await asyncio.sleep(wait)
 
 
-def startup():
+def startup(token: str = None):
     """
     Default initialisation function.
     :return:
@@ -367,9 +375,10 @@ def startup():
     client = Client()
 
     # Launch the client
-    client.run()
+    client.run(token=token)
 
 
 if __name__ == "__main__":
-    # Don't auto startup if we're imported
-    startup()
+    # Only auto startup if we're imported
+    discord_token = argv[1] if len(argv) > 1 else None  # Get token as an argument
+    startup(token=discord_token)
