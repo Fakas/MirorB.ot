@@ -169,6 +169,7 @@ def set_config(target, config):
     name = get_name(target)
     config_path = get_config_path(name)
     with open(config_path, "w") as config_file:
+        print(json.dumps(config, indent=4))
         json.dump(config, config_file, indent=4)
 
 
