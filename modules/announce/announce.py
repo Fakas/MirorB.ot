@@ -22,7 +22,7 @@ class Announce(MirorModule):
         self.mb_actions["on_command"] = {"announce": self.announce_cmd}
         self.mb_actions["on_voice_join"] = {"announce": self.announce}
         self.mb_actions["on_voice_join_self"] = {"announce": self.announce_self}
-        self.get_config()
+        self.cfg = self.get_config()
 
     @staticmethod
     def should_announce(client, user_id, force_announce=False):
@@ -55,7 +55,7 @@ class Announce(MirorModule):
             return
 
         user_id = str(user_id)
-        announce_dir = client.cfg["announce_dir"]
+        announce_dir = self.cfg["announce_dir"]
         # Get all files in directory
         files = [file for file in os.listdir(announce_dir) if os.path.isfile(os.path.join(announce_dir, file))]
         path = None
