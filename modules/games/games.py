@@ -28,9 +28,9 @@ class Games(MirorModule):
 
     async def games_cmd(self, *_args, **kwargs):
         channel = kwargs["channel"]
-        games = callwebjson(self.cfg["api_url"] + "games/")
-        for game_id in games:
-            game = callwebjson(self.cfg["api_url"] + "games/" + game_id)
+        games = callwebjson(self.cfg["api_url"] + "games/all")
+        for game_id in games.keys():
+            game = games[game_id]
             title = game["server_name"] if game["online"] else f"{game_id} (Server offline)"
             game_name = game["game_name"]
             map_name = game["map_name"]
