@@ -11,7 +11,7 @@ class Games(MirorModule):
     mb_name = "Games"
 
     mb_default_config = {
-        "api_url": "https://api.serveymcserveface.com/"
+        "api_url": "https://games.api.serveymcserveface.com/"
     }
 
     mb_help = "Games module, displays game info! \n\n" \
@@ -28,7 +28,7 @@ class Games(MirorModule):
 
     async def games_cmd(self, *_args, **kwargs):
         channel = kwargs["channel"]
-        games = callwebjson(self.cfg["api_url"] + "games/all")
+        games = callwebjson(self.cfg["api_url"] + "all")
         for game_id in games.keys():
             game = games[game_id]
             title = game["server_name"] if game["online"] else f"{game_id} (Server offline)"
