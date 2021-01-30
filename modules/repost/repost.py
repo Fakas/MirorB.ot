@@ -16,7 +16,9 @@ class Repost(MirorModule):
     cache = None
     dir = None
 
-    mb_help = "Repost module, bullies people who submit reposts!"
+    mb_help = "Repost module, bullies people who submit reposts! \n\n" \
+              "Commands: \n" \
+              "__cmd__repost <link> - Submit an acknowledged repost \n"
 
     mb_default_config = {
         "hosts": ["youtube.com", "youtu.be", "twitter.com", "twimg.com"],
@@ -59,6 +61,8 @@ class Repost(MirorModule):
         msg = kwargs["message"]
         client = kwargs["client"]
         content = msg.content
+        if client.cfg["cmd"] + "repost" in content:  # Ignore messages with a !repost command
+            return
         temp_cache = []
         replied = False
         for host in self.cfg["hosts"]:
