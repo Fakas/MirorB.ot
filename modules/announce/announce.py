@@ -13,7 +13,7 @@ class Announce(MirorModule):
     mb_default_config = {"announce_dir": "./announce/"}
 
     mb_help = "Announce module, plays announce sounds! \n\n" \
-              "Change your announce sound at https://www.miror.bot \n" \
+              "Change your announce sound at https://www.mirorbot.fakas.co.uk \n" \
               "Commands: \n" \
               "__cmd__announce <@user>     - Play someone's announce sound \n" \
               "__cmd__announce <User ID>   - Play an announce sound by user ID"
