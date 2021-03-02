@@ -7,6 +7,7 @@ from modules.asslib import disp, async_util, get_function_name
 from modules.miror_module import is_module, verify_module, get_config, set_config
 from sys import argv
 import asyncio
+from os import getenv
 
 import modules as mb_modules
 
@@ -365,17 +366,29 @@ class Client(discord.Client):
             await asyncio.sleep(wait)
 
 
+
 def startup(token: str = None):
     """
     Default initialisation function.
     :return:
     """
     # Prepare things before logging in
-    discord.opus.load_opus("libopus.so.0")
+    if voice_mode():
+        discord.opus.load_opus("libopus.so.0")
     client = Client()
 
     # Launch the client
     client.run(token=token)
+
+
+def voice_mode():
+    if getenv(
+        "MIRORBOT_VOICE",
+        "1"
+    ) == "1":
+        return True
+    else:
+        return False
 
 
 if __name__ == "__main__":
