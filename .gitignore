@@ -1,1 +1,5 @@
 /.idea
+*.json
+*.pyc
+*.pyd
+venv/
