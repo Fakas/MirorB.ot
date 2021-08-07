@@ -74,7 +74,7 @@ class Announce(MirorModule):
 
     async def announce_self(self, *args, **kwargs):
         kwargs.update({"member": kwargs["client"].user})
-        await self.announce(*args, **kwargs)
+        await self.announce(*args, **kwargs, force_announce=True)
 
     async def announce_cmd(self, *args, **kwargs):
         # Announce the user's or an arbitrary ID
