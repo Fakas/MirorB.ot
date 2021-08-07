@@ -28,10 +28,10 @@ class Announce(MirorModule):
 
     def should_announce(self, client, user_id, force_announce=False):
         do_announce = False
-        if force_announce:
-            return True
-        elif client.voice_client is None:
+        if client.voice_client is None:
             return False
+        elif force_announce:
+            return True
         elif user_id in self.announced and time.time() < self.announced[user_id] + 60:
             return False
         else:
