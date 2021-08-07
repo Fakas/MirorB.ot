@@ -30,7 +30,9 @@ class Announce(MirorModule):
         do_announce = False
         if force_announce:
             return True
-        elif client.voice_client is None or (user_id in self.announced and time.time() > self.announced[user_id] + 60):
+        elif client.voice_client is None:
+            return False
+        elif user_id in self.announced and time.time() < self.announced[user_id] + 60:
             return False
         else:
             for member in client.voice_client.channel.members:
@@ -67,8 +69,8 @@ class Announce(MirorModule):
             # TODO Add default announce sound functionality (Fakas)
             disp(f"No announce sound for ID {str_id}")
         else:
-            client.play(path)
             self.announced[user_id] = time.time()
+            client.play(path)
 
     async def announce_self(self, *args, **kwargs):
         kwargs.update({"member": kwargs["client"].user})
