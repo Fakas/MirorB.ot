@@ -32,7 +32,7 @@ class Announce(MirorModule):
             return False
         elif force_announce:
             return True
-        elif user_id in self.announced and time.time() < self.announced[user_id] + 60:
+        elif user_id in self.announced and time.time() < self.announced[user_id] + 600:
             return False
         else:
             for member in client.voice_client.channel.members:
