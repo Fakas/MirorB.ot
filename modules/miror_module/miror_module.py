@@ -1,6 +1,7 @@
 """Common Miror B.ot Module"""
 import json
 from os import path, getcwd, makedirs
+from typing import Union
 from modules.asslib import frame_util, disp
 
 
@@ -149,15 +150,25 @@ def get_config(target):
     :return: Config dict
     """
     name = get_name(target)
-    config_path = get_config_path(name)
-    if not path.exists(config_path):
-        disp(f"Generating config file for module \"{name}\"...")
-        set_config(name, target.mb_default_config)
+    return get_json(name, target.mb_default_config)
 
-    config_file = open(config_path, 'r')
-    config = json.load(config_file)
-    config_file.close()
-    return config
+
+def get_json(name: str, default: Union[list, dict]):
+    json_path = get_config_path(name)
+    if not path.exists(json_path):
+        disp(f"Generating JSON file for module \"{name}\"...")
+        set_json(name, default)
+
+    file = open(json_path, 'r')
+    content = json.load(file)
+    file.close()
+    return content
+
+
+def set_json(name: str, content: Union[list, dict]):
+    json_path = get_config_path(name)
+    with open(json_path, "w") as file:
+        json.dump(content, file, indent=4)
 
 
 def set_config(target, config):
@@ -167,9 +178,7 @@ def set_config(target, config):
     :param config: config dict
     """
     name = get_name(target)
-    config_path = get_config_path(name)
-    with open(config_path, "w") as config_file:
-        json.dump(config, config_file, indent=4)
+    set_json(name, config)
 
 
 def get_name(target):
