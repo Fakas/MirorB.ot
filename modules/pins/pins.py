@@ -4,6 +4,8 @@ from modules.miror_module import MirorModule
 from collections import OrderedDict
 from discord import TextChannel, errors
 
+MAX_PINS = 50
+
 
 class Pins(MirorModule):
     """Pin-tracking Miror B.ot Module"""
@@ -31,13 +33,17 @@ class Pins(MirorModule):
             }
         }
 
-    async def pins_update(*_args, **kwargs):
+    async def pins_update(self, *_args, **kwargs):
         channel = kwargs["channel"]
         pins = await get_pins(channel)
+        if len(pins) == MAX_PINS:
+            await show_pins(channel)
+            return
         await channel.send(format_count(pins))
 
+
+
     async def pins_cmd(self, *_args, **kwargs):
-        client = kwargs["client"]
         message_channel = kwargs["channel"]
         if kwargs["words"]:
             channel_id = kwargs["words"][0].replace("<", "").replace(">", "").replace("#", "")
@@ -46,11 +52,8 @@ class Pins(MirorModule):
                 channel = message_channel.guild.get_channel(int(channel_id))
         else:
             channel = message_channel
+        await show_pins(channel)
 
-        pins = await get_pins(channel)
-        text = await format_stats(generate_stats(pins), channel.name)
-        text += f"\n{format_count(pins)}\n"
-        await message_channel.send(text)
 
     async def count_cmd(self, *_args, **kwargs):
         await self.pins_update(**kwargs)
@@ -64,7 +67,7 @@ class Pins(MirorModule):
 
 
 def format_count(pins):
-    return f"{len(pins)}/50 Pins used!"
+    return f"{len(pins)}/{MAX_PINS} Pins used!"
 
 
 async def format_stats(unsorted_stats, name):
@@ -111,6 +114,13 @@ async def generate_leaderboard(guild):
 
 async def get_pins(channel):
     return await channel.pins()
+
+
+async def show_pins(channel):
+    pins = await get_pins(channel)
+    text = await format_stats(generate_stats(pins), channel.name)
+    text += f"\n{format_count(pins)}\n"
+    await channel.send(text)
 
 
 def sort_dict(d):
