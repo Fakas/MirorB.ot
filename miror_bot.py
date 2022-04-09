@@ -360,6 +360,7 @@ class Client(discord.Client):
             raise e from None
 
     async def tick(self):
+        print("Ticking...")
         wait = self.cfg["tick_wait"]
         while True:
             await self.async_module_event(get_function_name())

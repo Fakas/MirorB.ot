@@ -8,6 +8,7 @@ CACHE_NAME = "news_cache_rss"
 
 class RSSConsumer(Consumer):
     async def _consume(self, client):
+        print("Consuming RSS feeds...")
         cache = get_json(CACHE_NAME, [])
 
         channel = await client.fetch_channel(self.channel_id)
