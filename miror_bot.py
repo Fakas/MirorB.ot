@@ -376,7 +376,7 @@ def startup(token: str = None):
     # Prepare things before logging in
     if voice_mode():
         discord.opus.load_opus("libopus.so.0")
-    client = Client(discord.Intents.all())
+    client = Client(intents=discord.Intents.all())
 
     # Launch the client
     client.run(token=token)
