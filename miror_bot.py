@@ -29,9 +29,9 @@ class Client(discord.Client):
         "tick_wait": 60
     }
 
-    def __init__(self):
+    def __init__(self, intents=None):
         # Call parent __init__ before we continue
-        super(Client, self).__init__()
+        super(Client, self).__init__(intents=intents)
         self.cfg = get_config(self)
 
         self.load_modules()
